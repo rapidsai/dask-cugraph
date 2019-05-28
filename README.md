@@ -62,24 +62,6 @@ Dask cuGraph can be installed using the `rapidsai` conda channel:
 conda install -c nvidia -c rapidsai -c conda-forge -c pytorch -c defaults dask_cugraph
 ```
 
-#### Build/Install from Source
-
-Dask cuGraph depends on:
-- dask
-- dask_cudf
-- dask_cuda
-- cugraph
-
-Dask cuGraph can be installed with the following command at the root of the repository:
-```bash
-python setup.py install
-```
-
-Tests can be verified using Pytest:
-```bash
-py.test dask_cugraph/test
-```
-
 ## Contact
 
 Find out more details on the [RAPIDS site](https://rapids.ai/community.html)
