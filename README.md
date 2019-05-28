@@ -1,4 +1,4 @@
-# <div align="left"><img src="img/rapids_logo.png" width="90px"/>&nbsp;Dask cuGraph - Multi-GPU Machine Learning Algorithms</div>
+# <div align="left"><img src="img/rapids_logo.png" width="90px"/>&nbsp;Dask cuGraph - Multi-GPU Graph Analytics Algorithms</div>
 
 Dask cuGraph contains parallel graph analytics algorithms that can make use of multiple GPUs on a single host. It is able to play nicely with other projects in the Dask ecosystem, as well as other RAPIDS projects, such as Dask cuDF and Dask cuML.
 
