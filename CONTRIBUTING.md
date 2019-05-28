@@ -38,7 +38,8 @@ and ask for clarifications!
 
 ### Build/Install from Source
 
-TODO
+**TODO**
+
 Dask cuGraph depends on:
 - dask
 - dask_cudf
