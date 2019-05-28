@@ -15,7 +15,7 @@ cluster = LocalCUDACluster()
 import dask_cudf
 df = dask_cudf.read_csv("/path/to/csv")
 
-# Fit a NearestNeighbors model and query it
+# Find PageRank
 import dask_cugraph
 TODO
 ```
@@ -55,7 +55,7 @@ Dask cuGraph relies on cuGraph to be installed. Refer to [cuGraph](https://githu
 
 #### Conda 
 
-TODO
+**TODO**
 
 Dask cuGraph can be installed using the `rapidsai` conda channel:
 ```bash
