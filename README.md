@@ -1,4 +1,4 @@
-# <div align="left"><img src="img/rapids_logo.png" width="90px"/>&nbsp;Dask cuGraph - Multi-GPU Machine Learning Algorithms</div>
+# <div align="left"><img src="img/rapids_logo.png" width="90px"/>&nbsp;Dask cuGraph - Multi-GPU Graph Analytics Algorithms</div>
 
 Dask cuGraph contains parallel graph analytics algorithms that can make use of multiple GPUs on a single host. It is able to play nicely with other projects in the Dask ecosystem, as well as other RAPIDS projects, such as Dask cuDF and Dask cuML.
 
@@ -15,7 +15,7 @@ cluster = LocalCUDACluster()
 import dask_cudf
 df = dask_cudf.read_csv("/path/to/csv")
 
-# Fit a NearestNeighbors model and query it
+# Find PageRank
 import dask_cugraph
 TODO
 ```
@@ -55,29 +55,11 @@ Dask cuGraph relies on cuGraph to be installed. Refer to [cuGraph](https://githu
 
 #### Conda 
 
-TODO
+**TODO**
 
 Dask cuGraph can be installed using the `rapidsai` conda channel:
 ```bash
 conda install -c nvidia -c rapidsai -c conda-forge -c pytorch -c defaults dask_cugraph
-```
-
-#### Build/Install from Source
-
-Dask cuGraph depends on:
-- dask
-- dask_cudf
-- dask_cuda
-- cugraph
-
-Dask cuGraph can be installed with the following command at the root of the repository:
-```bash
-python setup.py install
-```
-
-Tests can be verified using Pytest:
-```bash
-py.test dask_cugraph/test
 ```
 
 ## Contact

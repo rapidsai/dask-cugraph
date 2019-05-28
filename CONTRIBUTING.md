@@ -36,6 +36,26 @@ into three categories:
 Remember, if you are unsure about anything, don't hesitate to comment on issues
 and ask for clarifications!
 
+### Build/Install from Source
+
+**TODO**
+
+Dask cuGraph depends on:
+- dask
+- dask_cudf
+- dask_cuda
+- cugraph
+
+Dask cuGraph can be installed with the following command at the root of the repository:
+```bash
+python setup.py install
+```
+
+Tests can be verified using Pytest:
+```bash
+py.test dask_cugraph/test
+```
+
 ### Seasoned developers
 
 Once you have gotten your feet wet and are more comfortable with the code, you
@@ -48,10 +68,6 @@ Look at the unassigned issues, and find an issue you are comfortable with
 contributing to. Start with _Step 3_ from above, commenting on the issue to let
 others know you are working on it. If you have any questions related to the
 implementation of the issue, ask them in the issue instead of the PR.
-
-## Developer documentation
-
-TODO
 
 ## Attribution
 Portions adopted from https://github.com/pytorch/pytorch/blob/master/CONTRIBUTING.md
