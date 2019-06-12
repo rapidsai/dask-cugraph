@@ -32,11 +32,12 @@ def test_pagerank():
 
     pr = dcg.mg_pagerank(ddf)
     print(pr)
-    res_df = pr.compute()
+    cu_df = pr.compute()
+    res_df = cu_df.sort_values('pagerank')
     print("RESULT:")
     print(res_df)
-    exp_df = pd.DataFrame({'pagerank':x + y})
+    pd_df = pd.DataFrame({'vertex':np.ones(len(x), dtype =int),'pagerank':x + y})
+    exp_df = pd_df.sort_values(by=['pagerank'])
     print(exp_df)
-    pd.util.testing.assert_frame_equal(res_df.to_pandas(), exp_df)
-    
+    pd.util.testing.assert_frame_equal(res_df.to_pandas().reset_index(drop=True), exp_df.reset_index(drop=True))
     client.close()

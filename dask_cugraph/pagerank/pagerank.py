@@ -7,8 +7,8 @@ import dask_cudf as dc
 from collections import defaultdict
 import numba.cuda
 from dask_cugraph.core import new_ipc_thread, parse_host_port
-from dask_cugraph.core import device_of_devicendarray
-
+from dask_cugraph.core import device_of_devicendarray, get_device_id
+import os
 from dask.distributed import Client, wait, default_client, futures_of
 from toolz import first, assoc
 
@@ -62,6 +62,15 @@ def _build_host_dict(gpu_futures, client):
 
     return hosts_dict
 
+def get_dev_idx(data):
+    ipcs, raw_arrs = data
+    device_handle_map = defaultdict(list)
+    [device_handle_map[dev].append((idx, ipc)) for dev, ipc, idx in ipcs]
+
+    dev_idxs = []
+    for dev, ipcs in device_handle_map.items():
+        dev_idxs.append(get_device_id(dev))
+    return [dev_idxs, os.environ['CUDA_VISIBLE_DEVICES']]
 
 def _mg_pagerank(data):
     
@@ -80,7 +89,7 @@ def _mg_pagerank(data):
                  for dev, ipcs in device_handle_map.items()]
     '''
     # TO DO: Improve/Generalize the calculation of open_ipcs/alloc_info 
-    open_ipcs = []
+    '''open_ipcs = []
     for dev, ipcs in device_handle_map.items():
         open_ipcs.append([[ipcs[0][0]], new_ipc_thread(ipcs[0][1], dev)])
 
@@ -101,7 +110,30 @@ def _mg_pagerank(data):
     alloc_info_dest.sort(key=lambda x: x[0][0])
     final_allocs_src = [a for i, a in alloc_info_src]
     final_allocs_dest = [a for i, a in alloc_info_dest]
-    
+    '''
+    open_ipcs = []
+    for dev, ipcs in device_handle_map.items():
+        open_ipcs.append([[dev], new_ipc_thread(ipcs[0][1], dev)])
+
+    alloc_info_src = []
+    alloc_info_dest = []
+    for dev, t in open_ipcs:
+        inf = t.info()
+        for i in range(len(dev)):
+            alloc_info_src.append([get_device_id(dev[i]), inf[0]])
+            alloc_info_dest.append([get_device_id(dev[i]), inf[1]])
+
+    for t in raw_arrs:
+        raw_info = build_alloc_info(t)
+        alloc_info_src.append([get_device_id(t[2]), raw_info[0]])
+        alloc_info_dest.append([get_device_id(t[2]), raw_info[1]])
+
+    alloc_info_src.sort(key=lambda x: x[0])
+    alloc_info_dest.sort(key=lambda x: x[0])
+
+    final_allocs_src = [a for i, a in alloc_info_src]
+    final_allocs_dest = [a for i, a in alloc_info_dest]
+
     '''ipc_dev_list, devarrs_dev_list = data
 
     # Open 1 ipc thread per device
@@ -147,19 +179,21 @@ def _mg_pagerank(data):
 def mg_pagerank(ddf):
 
     client = default_client()
-
+    npartitions = ddf.npartitions
     gpu_futures = _get_mg_info(ddf)
 
+    print("gpu_futures: ", client.who_has(gpu_futures))
     host_dict = _build_host_dict(gpu_futures, client).items()
     if len(host_dict) > 1:
         raise Exception("Dask cluster appears to span hosts. Current "
                         "multi-GPU version is limited to single host")
+    print("host_dict: ", host_dict)
 
     master_host = [(host, random.sample(ports, 1)[0])
                         for host, ports in host_dict][0]
 
     host, port = master_host
-
+    print("exec_node: ", master_host)
     gpu_futures_for_host = list(filter(lambda d: d[0][0] == host,
                                            gpu_futures))
     exec_node = (host, port)
@@ -175,13 +209,24 @@ def mg_pagerank(ddf):
 
     raw_arrays = [future for worker, future in gpu_data_incl_worker]
 
+    dev_idx = client.submit(get_dev_idx, (ipc_handles, raw_arrays),
+                                  workers=[exec_node]).result()
+    print("dev_idx: ",dev_idx)
+
     pr = client.submit(_mg_pagerank, (ipc_handles, raw_arrays),
                                   workers=[exec_node]).result()
 
     #wait(pr)
-    ddf = dc.from_cudf(pr, npartitions =2)    
+    ddf = dc.from_cudf(pr, npartitions =npartitions)    
     return ddf
+    #return 1
 
+
+def find_dev(df):
+    gpu_array_src = df['src']._column._data.mem
+    dev = device_of_devicendarray(gpu_array_src)
+    return dev
+ 
 def _get_mg_info(ddf):
 
         client = default_client()
@@ -193,17 +238,19 @@ def _get_mg_info(ddf):
 
         key_to_part_dict = dict([(str(part.key), part) for part in parts])
         who_has = client.who_has(parts)
-
+        print("WHO HAS: ", who_has)
         worker_map = []
         for key, workers in who_has.items():
             worker = parse_host_port(first(workers))
             worker_map.append((worker, key_to_part_dict[key]))
 
+        print("WORKER MAP: ", worker_map)
         gpu_data = [(worker, client.submit(to_gpu_array, part,
                                            workers=[worker]))
                     for worker, part in worker_map]
 
         wait(gpu_data)
-
+        x = [client.submit(find_dev, part, workers=[worker]).result() for worker, part in worker_map]
+        print(x)
         return gpu_data
 
