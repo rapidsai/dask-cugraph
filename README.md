@@ -17,7 +17,7 @@ df = dask_cudf.read_csv("/path/to/csv")
 
 # Find PageRank
 import dask_cugraph
-TODO
+pagerank = dask_cugraph.mg_pagerank(df)
 ```
 
 ## Dask CUDA Clusters
