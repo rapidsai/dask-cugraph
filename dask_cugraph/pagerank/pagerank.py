@@ -14,6 +14,10 @@ from toolz import first, assoc
 
 
 def to_gpu_array(df):
+    """
+    Get the gpu_array pointer to the data in columns of the
+    input dataframe.
+    """
     start_idx = df.index[0]
     stop_idx = df.index[-1]
     gpu_array_src = df['src']._column._data.mem
@@ -21,12 +25,11 @@ def to_gpu_array(df):
     dev = device_of_devicendarray(gpu_array_src)
     return dev, (gpu_array_src, gpu_array_dest), (start_idx, stop_idx)
 
+
 def build_alloc_info(data):
     """
     Use the __cuda_array_interface__ to extract cpointer
     information for passing into cython.
-    :param data:
-    :return:
     """
     dev, gpu_array, _ = data
     return (gpu_array[0].__cuda_array_interface__, gpu_array[1].__cuda_array_interface__)
@@ -37,8 +40,6 @@ def get_ipc_handle(data):
     Extract IPC handles from input Numba array. Pass
     along the device of the current worker and the
     start/stop indices from the original cudf.
-    :param data:
-    :return:
     """
     dev, gpu_array, idx = data
 
@@ -48,6 +49,10 @@ def get_ipc_handle(data):
 
 
 def _build_host_dict(gpu_futures, client):
+    """ 
+    Build a dictionary of hosts and their corresponding ports from workers 
+    which have the given gpu_futures.
+    """
     ######## TO DO: IMPROVE/ CLEANUP
     who_has = client.who_has(gpu_futures)
 
@@ -62,7 +67,8 @@ def _build_host_dict(gpu_futures, client):
 
     return hosts_dict
 
-def get_dev_idx(data):
+
+'''def get_dev_idx(data):
     ipcs, raw_arrs = data
     device_handle_map = defaultdict(list)
     [device_handle_map[dev].append((idx, ipc)) for dev, ipc, idx in ipcs]
@@ -71,11 +77,15 @@ def get_dev_idx(data):
     for dev, ipcs in device_handle_map.items():
         dev_idxs.append(get_device_id(dev))
     return [dev_idxs, os.environ['CUDA_VISIBLE_DEVICES']]
+'''
 
 def _mg_pagerank(data):
-    
+    """
+    Collect all ipc pointer information into source and destination alloc_info 
+    list that is passed to snmg pagerank.
+    """ 
     ipcs, raw_arrs = data
-
+    
     # Separate threads to hold pointers to separate devices
     # The order in which we pass the list of IPCs to the thread matters and
     # the goal isto maximize reuse while minimizing the number of threads.
@@ -83,7 +93,7 @@ def _mg_pagerank(data):
     # avoid having if be O(len(ipcs)) at all costs!
     device_handle_map = defaultdict(list)
     [device_handle_map[dev].append((idx, ipc)) for dev, ipc, idx in ipcs]
-
+    
     '''open_ipcs = [([i[0] for i in ipcs],
                   new_ipc_thread([i[1] for i in ipcs], dev))
                  for dev, ipcs in device_handle_map.items()]
@@ -133,7 +143,7 @@ def _mg_pagerank(data):
 
     final_allocs_src = [a for i, a in alloc_info_src]
     final_allocs_dest = [a for i, a in alloc_info_dest]
-
+    
     '''ipc_dev_list, devarrs_dev_list = data
 
     # Open 1 ipc thread per device
@@ -177,27 +187,22 @@ def _mg_pagerank(data):
 
 
 def mg_pagerank(ddf):
-
     client = default_client()
     npartitions = ddf.npartitions
     gpu_futures = _get_mg_info(ddf)
 
-    print("gpu_futures: ", client.who_has(gpu_futures))
     host_dict = _build_host_dict(gpu_futures, client).items()
     if len(host_dict) > 1:
         raise Exception("Dask cluster appears to span hosts. Current "
                         "multi-GPU version is limited to single host")
-    print("host_dict: ", host_dict)
 
     master_host = [(host, random.sample(ports, 1)[0])
                         for host, ports in host_dict][0]
 
     host, port = master_host
-    print("exec_node: ", master_host)
     gpu_futures_for_host = list(filter(lambda d: d[0][0] == host,
                                            gpu_futures))
     exec_node = (host, port)
-
     # build ipc handles
     gpu_data_excl_worker = list(filter(lambda d: d[0] != exec_node,
                                        gpu_futures_for_host))
@@ -209,25 +214,26 @@ def mg_pagerank(ddf):
 
     raw_arrays = [future for worker, future in gpu_data_incl_worker]
 
-    dev_idx = client.submit(get_dev_idx, (ipc_handles, raw_arrays),
+    '''dev_idx = client.submit(get_dev_idx, (ipc_handles, raw_arrays),
                                   workers=[exec_node]).result()
     print("dev_idx: ",dev_idx)
-
+    '''
     pr = client.submit(_mg_pagerank, (ipc_handles, raw_arrays),
                                   workers=[exec_node]).result()
 
     #wait(pr)
     ddf = dc.from_cudf(pr, npartitions =npartitions)    
     return ddf
-    #return 1
 
 
 def find_dev(df):
     gpu_array_src = df['src']._column._data.mem
     dev = device_of_devicendarray(gpu_array_src)
     return dev
+
  
 def _get_mg_info(ddf):
+        # Get gpu data pointers of columns of each dataframe partition
 
         client = default_client()
 
@@ -238,19 +244,38 @@ def _get_mg_info(ddf):
 
         key_to_part_dict = dict([(str(part.key), part) for part in parts])
         who_has = client.who_has(parts)
-        print("WHO HAS: ", who_has)
         worker_map = []
         for key, workers in who_has.items():
             worker = parse_host_port(first(workers))
             worker_map.append((worker, key_to_part_dict[key]))
 
-        print("WORKER MAP: ", worker_map)
         gpu_data = [(worker, client.submit(to_gpu_array, part,
                                            workers=[worker]))
                     for worker, part in worker_map]
 
         wait(gpu_data)
         x = [client.submit(find_dev, part, workers=[worker]).result() for worker, part in worker_map]
-        print(x)
         return gpu_data
 
+
+def get_n_gpus():
+    from numba import cuda
+    return len(cuda.gpus)
+
+def read_csv(input_path, delimiter = ',', names = None, dtype = None):
+    # Calculate appropriate chunksize to get partitions equal to number of gpus
+    import os
+    from glob import glob
+    import math
+    #from numba import cuda
+    import dask_cudf
+    input_files = sorted(glob(str(input_path)))
+    if len(input_files) is 1:
+        size = os.path.getsize(input_files[0])
+        chunksize = math.ceil(size/get_n_gpus())
+    else:
+        chunksize = 3200000000
+    dgdf = dask_cudf.read_csv(input_path, chunksize= chunksize, delimiter=delimiter, names=names, dtype=dtype)
+    return dgdf
+
+    
