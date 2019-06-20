@@ -21,7 +21,7 @@ def test_one_csv_file_pagerank():
 
 
     print("Read Input Data.")
-    input_data_path = r"/datasets/pagerank_demo/1/Input-huge/edges/temp/part-00000.csv"
+    input_data_path = r"../datasets/hibench_small.csv"
     ddf = dcg.read_csv(input_data_path, delimiter='\t', names=['src', 'dst'], dtype=['int32', 'int32'])
     print("DASK CUDF: ", ddf)
     print("CALLING DASK MG PAGERANK")
