@@ -258,10 +258,6 @@ def _get_mg_info(ddf):
         return gpu_data
 
 
-def get_n_gpus():
-    from numba import cuda
-    return len(cuda.gpus)
-
 def read_csv(input_path, delimiter = ',', names = None, dtype = None):
     # Calculate appropriate chunksize to get partitions equal to number of gpus
     import os
@@ -272,9 +268,10 @@ def read_csv(input_path, delimiter = ',', names = None, dtype = None):
     input_files = sorted(glob(str(input_path)))
     if len(input_files) is 1:
         size = os.path.getsize(input_files[0])
-        chunksize = math.ceil(size/get_n_gpus())
+        chunksize = math.ceil(size/len(os.popen("nvidia-smi -L").read().strip().split("\n")))
     else:
-        chunksize = 3200000000
+        size = [os.path.getsize(_file) for _file in input_files]
+        chunksize = max(size)
     dgdf = dask_cudf.read_csv(input_path, chunksize= chunksize, delimiter=delimiter, names=names, dtype=dtype)
     return dgdf
 
