@@ -2,10 +2,10 @@ import pytest
 import pandas as pd
 from dask.distributed import Client, wait, default_client, futures_of
 from dask_cuda import LocalCUDACluster
-
+import os
 
 def test_pagerank():
-    cluster = LocalCUDACluster(n_workers = 4, threads_per_worker=1)
+    cluster = LocalCUDACluster(threads_per_worker=1)
     client = Client(cluster)
 
     import dask.dataframe as dd
@@ -26,7 +26,7 @@ def test_pagerank():
     input_df['src']=x
     input_df['dst']=y
 
-    ddf = dask_cudf.from_cudf(input_df, npartitions=4).persist()
+    ddf = dask_cudf.from_cudf(input_df, npartitions=len(os.popen("nvidia-smi -L").read().strip().split("\n")))
     print("DASK CUDF: ", ddf)
     print("CALLING DASK MG PAGERANK")
 
@@ -40,4 +40,5 @@ def test_pagerank():
     exp_df = pd_df.sort_values(by=['pagerank'])
     print(exp_df)
     pd.util.testing.assert_frame_equal(res_df.to_pandas().reset_index(drop=True), exp_df.reset_index(drop=True))
+   
     client.close()
