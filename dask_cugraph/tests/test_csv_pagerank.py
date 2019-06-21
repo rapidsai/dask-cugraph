@@ -2,10 +2,11 @@ import pytest
 import pandas as pd
 from dask.distributed import Client, wait, default_client, futures_of
 from dask_cuda import LocalCUDACluster
+import os
 
 
 def test_one_csv_file_pagerank():
-    cluster = LocalCUDACluster(n_workers = 8, threads_per_worker=1)
+    cluster = LocalCUDACluster(threads_per_worker=1)
     client = Client(cluster)
 
     import dask.dataframe as dd
@@ -41,7 +42,7 @@ def test_one_csv_file_pagerank():
 
 
 def test_multiple_csv_file_pagerank():
-    cluster = LocalCUDACluster(n_workers = 8, threads_per_worker=1)
+    cluster = LocalCUDACluster(threads_per_worker=1)
     client = Client(cluster)
 
     import dask.dataframe as dd
