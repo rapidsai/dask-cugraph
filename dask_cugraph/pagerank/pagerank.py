@@ -257,7 +257,6 @@ def _get_mg_info(ddf):
         x = [client.submit(find_dev, part, workers=[worker]).result() for worker, part in worker_map]
         return gpu_data
 
-
 def read_csv(input_path, delimiter = ',', names = None, dtype = None):
     # Calculate appropriate chunksize to get partitions equal to number of gpus
     import os
