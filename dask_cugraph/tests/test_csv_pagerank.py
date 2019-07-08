@@ -22,7 +22,7 @@ def test_one_csv_file_pagerank():
 
 
     print("Read Input Data.")
-    input_data_path = r"../datasets/hibench_small/1/part-00000.csv"
+    input_data_path = r"datasets/hibench_small/1/part-00000.csv"
     ddf = dcg.read_csv(input_data_path, delimiter='\t', names=['src', 'dst'], dtype=['int32', 'int32'])
     print("DASK CUDF: ", ddf)
     print("CALLING DASK MG PAGERANK")
@@ -58,7 +58,7 @@ def test_multiple_csv_file_pagerank():
 
 
     print("Read Input Data.")
-    input_data_path = r"../datasets/hibench_small/2/"
+    input_data_path = r"datasets/hibench_small/2/"
     ddf = dcg.read_csv(input_data_path + r"/part-*", delimiter='\t', names=['src', 'dst'], dtype=['int32', 'int32'])
     print("DASK CUDF: ", ddf)
     print("CALLING DASK MG PAGERANK")
