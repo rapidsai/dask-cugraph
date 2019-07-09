@@ -257,6 +257,13 @@ def _get_mg_info(ddf):
         x = [client.submit(find_dev, part, workers=[worker]).result() for worker, part in worker_map]
         return gpu_data
 
+def get_n_gpus():
+    try:
+        return len(os.environ["CUDA_VISIBLE_DEVICES"].split(","))
+    except KeyError:
+        print("here")
+        return len(os.popen("nvidia-smi -L").read().strip().split("\n"))
+
 def read_csv(input_path, delimiter = ',', names = None, dtype = None):
     # Calculate appropriate chunksize to get partitions equal to number of gpus
     import os
@@ -267,7 +274,7 @@ def read_csv(input_path, delimiter = ',', names = None, dtype = None):
     input_files = sorted(glob(str(input_path)))
     if len(input_files) is 1:
         size = os.path.getsize(input_files[0])
-        chunksize = math.ceil(size/len(os.popen("nvidia-smi -L").read().strip().split("\n")))
+        chunksize = math.ceil(size/get_n_gpus())
     else:
         size = [os.path.getsize(_file) for _file in input_files]
         chunksize = max(size)
