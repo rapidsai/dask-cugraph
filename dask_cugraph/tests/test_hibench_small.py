@@ -19,11 +19,12 @@ with warnings.catch_warnings():
 
 def test_pagerank():
     gc.collect()
-    input_data_path = r"datasets/karate.csv"
+    input_data_path = r"datasets/hibench_small/1/part-00000.csv"
 
     # Networkx Call
     import pandas as pd
-    pd_df = pd.read_csv(input_data_path, delimiter=' ', names=['src', 'dst', 'value'])
+    pd_df = pd.read_csv(input_data_path, delimiter='\t', names=['src', 'dst'])
+    print(pd_df)
     import networkx as nx
     G = nx.Graph()
     for i in range(0,len(pd_df)):
@@ -40,7 +41,7 @@ def test_pagerank():
     import dask_cugraph.pagerank as dcg
     input_df = cudf.DataFrame()
     print("Read Input Data.")
-    ddf = dcg.read_csv(input_data_path, delimiter=' ', names=['src', 'dst', 'value'], dtype=['int32', 'int32', 'float32'])
+    ddf = dcg.read_csv(input_data_path, delimiter='\t', names=['src', 'dst'], dtype=['int32', 'int32'])
     print("CALLING DASK MG PAGERANK")
     pr = dcg.mg_pagerank(ddf)
     res_df = pr.compute()
@@ -50,6 +51,4 @@ def test_pagerank():
         if(abs(res_df['pagerank'][i]-nx_pr[i][1]) > tol*1.1):
             err = err + 1
     print("Mismatches:", err)
-    assert err < (0.01*len(res_df)) 
-
-    #assert 1==0
+    assert err < (0.01*len(res_df))
