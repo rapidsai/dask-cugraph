@@ -57,7 +57,7 @@ python setup.py install
 
 Tests can be verified using Pytest:
 ```bash
-py.test dask_cugraph/test
+py.test
 ```
 
 ### Seasoned developers
