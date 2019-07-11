@@ -41,7 +41,7 @@ and ask for clarifications!
 Most dask-cugraph developers are also cugraph developers. It is recommended to start from `cugraph_dev` environment and install dependencies directly there. 
 
 ```bash
-conda install -c rapidsai-nightly -c conda-forge dask-cuda dask-core dask-cudf`
+conda install -c rapidsai-nightly -c conda-forge dask-cuda dask-core dask-cudf
 ```
 
 Dask cuGraph depends on:
