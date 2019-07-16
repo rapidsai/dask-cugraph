@@ -1,12 +1,12 @@
 import operator
-from dask.distributed import Client, wait, default_client, futures_of
+from dask.distributed import Client
 from dask_cuda import LocalCUDACluster
 import gc
-from itertools import product
-import time
-import numpy as np
-
+import dask_cudf
+import dask_cugraph.pagerank as dcg
+import pandas as pd
 import pytest
+
 # Temporarily suppress warnings till networkX fixes deprecation warnings
 # (Using or importing the ABCs from 'collections' instead of from
 # 'collections.abc' is deprecated, and in 3.8 it will stop working) for
@@ -22,7 +22,6 @@ def test_pagerank():
     input_data_path = r"datasets/karate.csv"
 
     # Networkx Call
-    import pandas as pd
     pd_df = pd.read_csv(input_data_path, delimiter=' ', names=['src', 'dst', 'value'])
     import networkx as nx
     G = nx.Graph()
@@ -34,13 +33,9 @@ def test_pagerank():
     # Cugraph snmg pagerank Call
     cluster = LocalCUDACluster(threads_per_worker=1)
     client = Client(cluster)
-    import numpy as np
-    import cudf
-    import dask_cudf
-    import dask_cugraph.pagerank as dcg
-    input_df = cudf.DataFrame()
     print("Read Input Data.")
-    ddf = dcg.read_csv(input_data_path, delimiter=' ', names=['src', 'dst', 'value'], dtype=['int32', 'int32', 'float32'])
+    chunksize = dcg.get_chunksize(input_data_path)
+    ddf = dask_cudf.read_csv(input_data_path, chunksize = chunksize, delimiter=' ', names=['src', 'dst', 'value'], dtype=['int32', 'int32', 'float32'])
     print("CALLING DASK MG PAGERANK")
     pr = dcg.mg_pagerank(ddf)
     res_df = pr.compute()
@@ -52,4 +47,3 @@ def test_pagerank():
     print("Mismatches:", err)
     assert err < (0.01*len(res_df)) 
 
-    #assert 1==0
