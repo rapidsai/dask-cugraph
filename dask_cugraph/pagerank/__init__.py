@@ -1,2 +1,2 @@
-from .pagerank import mg_pagerank, get_chunksize
+from .pagerank import pagerank, get_chunksize
 
