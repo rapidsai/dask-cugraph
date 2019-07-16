@@ -1,29 +1,21 @@
 import pytest
 import pandas as pd
-from dask.distributed import Client, wait, default_client, futures_of
+from dask.distributed import Client
 from dask_cuda import LocalCUDACluster
-import os
+import dask.dataframe as dd
+import dask_cudf
+import pandas.testing
 
+import dask_cugraph.pagerank as dcg
 
 def test_one_csv_file_pagerank():
     cluster = LocalCUDACluster(threads_per_worker=1)
     client = Client(cluster)
 
-    import dask.dataframe as dd
-    import dask_cudf
-    from toolz import first, assoc
-    import cudf
-    import numba.cuda as cuda
-    import numpy as np
-
-    import pandas.testing
-
-    import dask_cugraph.pagerank as dcg
-
-
     print("Read Input Data.")
     input_data_path = r"datasets/hibench_small/1/part-00000.csv"
-    ddf = dcg.read_csv(input_data_path, delimiter='\t', names=['src', 'dst'], dtype=['int32', 'int32'])
+    chunksize = dcg.get_chunksize(input_data_path)
+    ddf = dask_cudf.read_csv(input_data_path, chunksize = chunksize,  delimiter='\t', names=['src', 'dst'], dtype=['int32', 'int32'])
     print("DASK CUDF: ", ddf)
     print("CALLING DASK MG PAGERANK")
 
@@ -45,21 +37,10 @@ def test_multiple_csv_file_pagerank():
     cluster = LocalCUDACluster(threads_per_worker=1)
     client = Client(cluster)
 
-    import dask.dataframe as dd
-    import dask_cudf
-    from toolz import first, assoc
-    import cudf
-    import numba.cuda as cuda
-    import numpy as np
-
-    import pandas.testing
-
-    import dask_cugraph.pagerank as dcg
-
-
     print("Read Input Data.")
     input_data_path = r"datasets/hibench_small/2/"
-    ddf = dcg.read_csv(input_data_path + r"/part-*", delimiter='\t', names=['src', 'dst'], dtype=['int32', 'int32'])
+    chunksize = dcg.get_chunksize(input_data_path + r"/part-*")
+    ddf = dask_cudf.read_csv(input_data_path + r"/part-*", chunksize = chunksize, delimiter='\t', names=['src', 'dst'], dtype=['int32', 'int32'])
     print("DASK CUDF: ", ddf)
     print("CALLING DASK MG PAGERANK")
 
