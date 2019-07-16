@@ -264,7 +264,8 @@ def get_n_gpus():
         print("here")
         return len(os.popen("nvidia-smi -L").read().strip().split("\n"))
 
-def read_csv(input_path, delimiter = ',', names = None, dtype = None):
+
+def get_chunksize(input_path, delimiter = ',', names = None, dtype = None):
     # Calculate appropriate chunksize to get partitions equal to number of gpus
     import os
     from glob import glob
@@ -278,7 +279,4 @@ def read_csv(input_path, delimiter = ',', names = None, dtype = None):
     else:
         size = [os.path.getsize(_file) for _file in input_files]
         chunksize = max(size)
-    dgdf = dask_cudf.read_csv(input_path, chunksize= chunksize, delimiter=delimiter, names=names, dtype=dtype)
-    return dgdf
-
-    
+    return chunksize    
