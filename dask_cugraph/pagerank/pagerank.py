@@ -186,7 +186,7 @@ def _mg_pagerank(data):
     return pr
 
 
-def mg_pagerank(ddf, alpha, max_iter):
+def pagerank(ddf, alpha, max_iter):
     client = default_client()
     npartitions = ddf.npartitions
     gpu_futures = _get_mg_info(ddf)

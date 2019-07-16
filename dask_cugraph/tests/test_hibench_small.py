@@ -43,7 +43,7 @@ def test_pagerank():
     print("Read Input Data.")
     ddf = dcg.read_csv(input_data_path, delimiter='\t', names=['src', 'dst'], dtype=['int32', 'int32'])
     print("CALLING DASK MG PAGERANK")
-    pr = dcg.mg_pagerank(ddf, alpha=0.85, max_iter=50)
+    pr = dcg.pagerank(ddf, alpha=0.85, max_iter=50)
     res_df = pr.compute()
     err = 0
     tol = 1.0e-05

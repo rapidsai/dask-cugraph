@@ -30,7 +30,7 @@ def test_pagerank():
     print("DASK CUDF: ", ddf)
     print("CALLING DASK MG PAGERANK")
 
-    pr = dcg.mg_pagerank(ddf)
+    pr = dcg.pagerank(ddf)
     print(pr)
     cu_df = pr.compute()
     res_df = cu_df.sort_values('pagerank')
