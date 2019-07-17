@@ -19,7 +19,7 @@ def test_one_csv_file_pagerank():
     print("DASK CUDF: ", ddf)
     print("CALLING DASK MG PAGERANK")
 
-    pr = dcg.mg_pagerank(ddf)
+    pr = dcg.pagerank(ddf)
     #print(pr)
     #cu_df = pr.compute()
     #res_df = cu_df.sort_values('pagerank')
@@ -44,7 +44,7 @@ def test_multiple_csv_file_pagerank():
     print("DASK CUDF: ", ddf)
     print("CALLING DASK MG PAGERANK")
 
-    pr = dcg.mg_pagerank(ddf)
+    pr = dcg.pagerank(ddf)
     #print(pr)
     #cu_df = pr.compute()
     #res_df = cu_df.sort_values('pagerank')

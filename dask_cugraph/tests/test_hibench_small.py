@@ -41,12 +41,14 @@ def test_pagerank():
     import dask_cugraph.pagerank as dcg
     input_df = cudf.DataFrame()
     print("Read Input Data.")
-    ddf = dcg.read_csv(input_data_path, delimiter='\t', names=['src', 'dst'], dtype=['int32', 'int32'])
+
+    chunksize = dcg.get_chunksize(input_data_path)
+    ddf = dask_cudf.read_csv(input_data_path, chunksize = chunksize, delimiter='\t', names=['src', 'dst'], dtype=['int32', 'int32'])
     print("CALLING DASK MG PAGERANK")
-    pr = dcg.mg_pagerank(ddf)
+    pr = dcg.pagerank(ddf, alpha=0.85, max_iter=50)
     res_df = pr.compute()
     err = 0
-    tol = 1.0e-02
+    tol = 1.0e-05
     for i in range(len(res_df)):
         if(abs(res_df['pagerank'][i]-nx_pr[i][1]) > tol*1.1):
             err = err + 1
