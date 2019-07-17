@@ -84,7 +84,7 @@ def _mg_pagerank(data):
     Collect all ipc pointer information into source and destination alloc_info 
     list that is passed to snmg pagerank.
     """ 
-    ipcs, raw_arrs = data
+    ipcs, raw_arrs, alpha, max_iter = data
     
     # Separate threads to hold pointers to separate devices
     # The order in which we pass the list of IPCs to the thread matters and
@@ -178,7 +178,7 @@ def _mg_pagerank(data):
             locals.append(build_alloc_info(pred)[0])
         alloc_info.append(locals)
     '''
-    pr = cugraph.mg_pagerank(final_allocs_src, final_allocs_dest)
+    pr = cugraph.mg_pagerank(final_allocs_src, final_allocs_dest, alpha, max_iter)
     
     [t[1].close() for t in open_ipcs]
     [t[1].join() for t in open_ipcs]
@@ -186,7 +186,7 @@ def _mg_pagerank(data):
     return pr
 
 
-def mg_pagerank(ddf):
+def pagerank(ddf, alpha=0.85, max_iter=30):
     client = default_client()
     npartitions = ddf.npartitions
     gpu_futures = _get_mg_info(ddf)
@@ -218,8 +218,8 @@ def mg_pagerank(ddf):
                                   workers=[exec_node]).result()
     print("dev_idx: ",dev_idx)
     '''
-    pr = client.submit(_mg_pagerank, (ipc_handles, raw_arrays),
-                                  workers=[exec_node]).result()
+    pr = client.submit(_mg_pagerank, (ipc_handles, raw_arrays, alpha, max_iter),
+                       workers=[exec_node]).result()
 
     #wait(pr)
     ddf = dc.from_cudf(pr, npartitions =npartitions)    
@@ -264,7 +264,8 @@ def get_n_gpus():
         print("here")
         return len(os.popen("nvidia-smi -L").read().strip().split("\n"))
 
-def read_csv(input_path, delimiter = ',', names = None, dtype = None):
+
+def get_chunksize(input_path, delimiter = ',', names = None, dtype = None):
     # Calculate appropriate chunksize to get partitions equal to number of gpus
     import os
     from glob import glob
@@ -278,7 +279,4 @@ def read_csv(input_path, delimiter = ',', names = None, dtype = None):
     else:
         size = [os.path.getsize(_file) for _file in input_files]
         chunksize = max(size)
-    dgdf = dask_cudf.read_csv(input_path, chunksize= chunksize, delimiter=delimiter, names=names, dtype=dtype)
-    return dgdf
-
-    
+    return chunksize    
