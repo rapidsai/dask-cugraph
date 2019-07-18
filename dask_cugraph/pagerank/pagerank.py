@@ -188,8 +188,8 @@ def _mg_pagerank(data):
 
 def pagerank(ddf, alpha=0.85, max_iter=30):
     client = default_client()
-    npartitions = ddf.npartitions
     gpu_futures = _get_mg_info(ddf)
+    npartitions = len(gpu_futures)
 
     host_dict = _build_host_dict(gpu_futures, client).items()
     if len(host_dict) > 1:
@@ -237,11 +237,12 @@ def _get_mg_info(ddf):
 
         client = default_client()
 
-        if isinstance(ddf, dd.DataFrame):
+        '''if isinstance(ddf, dd.DataFrame):
             parts = ddf.to_delayed()
             parts = client.compute(parts)
             wait(parts)
-
+        '''
+        parts = ddf
         key_to_part_dict = dict([(str(part.key), part) for part in parts])
         who_has = client.who_has(parts)
         worker_map = []
