@@ -34,15 +34,20 @@ def test_pagerank():
     # Cugraph snmg pagerank Call
     cluster = LocalCUDACluster(threads_per_worker=1)
     client = Client(cluster)
-    import numpy as np
-    import cudf
     import dask_cudf
     import dask_cugraph.pagerank as dcg
-    input_df = cudf.DataFrame()
+    
+    t0 = time.time()
     chunksize = dcg.get_chunksize(input_data_path)
     ddf = dask_cudf.read_csv(input_data_path, chunksize = chunksize, delimiter='\t', names=['src', 'dst'], dtype=['int32', 'int32'])
-    
-    pr = dcg.pagerank(ddf, alpha=0.85, max_iter=50)
+    y = ddf.to_delayed()
+    x = client.compute(y)
+    wait(x)
+    t1 = time.time()
+    print("Reading Csv time: ", t1-t0)
+    pr = dcg.pagerank(x, alpha=0.85, max_iter=50)
+    t2 = time.time()
+    print("Running PR algo time: ", t2-t1)
     res_df = pr.compute()
 
     # Comparison
