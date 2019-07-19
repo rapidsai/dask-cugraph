@@ -34,7 +34,10 @@ def build_alloc_info(data):
     dev, gpu_array, _ = data
     return (gpu_array[0].__cuda_array_interface__, gpu_array[1].__cuda_array_interface__)
 
-
+def dup(data):
+    new_ddf = data.drop_duplicates()
+    return new_ddf
+    
 def get_ipc_handle(data):
     """
     Extract IPC handles from input Numba array. Pass
@@ -208,6 +211,9 @@ def pagerank(ddf, alpha=0.85, max_iter=30):
                                        gpu_futures_for_host))
     gpu_data_incl_worker = list(filter(lambda d: d[0] == exec_node,
                                        gpu_futures_for_host))
+
+    new_ddf = [client.submit(dup, ddf, workers=[worker])]
+    print(new_ddf)
 
     ipc_handles = [client.submit(get_ipc_handle, future, workers=[worker])
                    for worker, future in gpu_data_excl_worker]
